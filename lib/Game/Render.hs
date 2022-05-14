@@ -1,9 +1,11 @@
 module Game.Render where
 
+import Control.Monad.Trans.Reader (ask)
+import Control.Monad.Trans.State.Strict (get)
 import Control.Monad.Trans.Class (lift)
 
 import Game.Env (Env (..))
-import Game.State (State (..))
+import Game.State (State (..), GameState (Menu, Game))
 import Game.Type (Game)
 
 mapFile :: String
@@ -47,8 +49,16 @@ renderTiles xs ballPos = concatMap (`renderTileLines` ballPos) xs
 
 renderString :: Game Env State String
 renderString = do
-    return (renderTiles mapLines (5, 9))
-        where
+    env <- ask
+    state <- lift get
+    case gameState state of
+        Menu -> return "Welcome to Two Putt!"
+        Game -> return (renderGame env state)
+    
+
+renderGame :: Env -> State -> String
+renderGame env state = renderTiles mapLines (ballPosition state)
+    where
         mapLines = parseMap (lines mapFile)
 
 renderIO :: Game Env State ()

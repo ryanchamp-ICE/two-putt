@@ -25,7 +25,7 @@ data State = State {
 
 defaultState :: State
 defaultState = State {
-    gameState = Menu,
-    ballPosition = (0, 0),
+    gameState = Game,
+    ballPosition = (1, 1),
     ballDirection = (Neutral, Neutral)
 }
