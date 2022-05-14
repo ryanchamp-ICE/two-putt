@@ -47,6 +47,22 @@ parseMap tileFile = zipWith (\i str -> createTileLines str i) [0..] tileFile
 renderTiles :: [[TileType]] -> (Int, Int) -> String
 renderTiles xs ballPos = concatMap (`renderTileLines` ballPos) xs
 
+renderPosition :: (Int, Int) -> String
+renderPosition (x, y) = "(" ++ show x ++ ", " ++ show y ++ ")"
+
+renderGameInfo :: State -> String
+renderGameInfo state = "Ball Pos: " ++ renderPosition (ballPosition state) ++ " | " ++
+                       "Hole Pos: " ++ renderPosition (holePosition state) ++ " | " ++
+                       "Hole Number: " ++ show (holeNumber state) ++ " | " ++
+                       "Stroke Number: " ++ show (strokeNumber state) ++ " | " ++
+                       "Total Score: " ++ show (totalScore state) ++ "\n"
+
+renderGame :: Env -> State -> String
+renderGame env state = renderTiles mapLines (ballPosition state) ++ "\n" ++
+                       renderGameInfo state
+    where
+        mapLines = parseMap (lines mapFile)
+
 renderString :: Game Env State String
 renderString = do
     env <- ask
@@ -54,12 +70,6 @@ renderString = do
     case gameState state of
         Menu -> return "Welcome to Two Putt!"
         Game -> return (renderGame env state)
-    
-
-renderGame :: Env -> State -> String
-renderGame env state = renderTiles mapLines (ballPosition state)
-    where
-        mapLines = parseMap (lines mapFile)
 
 renderIO :: Game Env State ()
 renderIO = do

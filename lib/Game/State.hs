@@ -20,12 +20,24 @@ directionToInt Positive = 1
 data State = State {
     gameState :: GameState,
     ballPosition :: (Int, Int),
-    ballDirection :: (Direction, Direction)
+    ballDirection :: (Direction, Direction),
+    strokeDirection :: (Direction, Direction),
+    strokePower :: Int,
+    strokeNumber :: Int,
+    holeNumber :: Int,
+    holePosition :: (Int, Int),
+    totalScore :: Int
 }
 
 defaultState :: State
 defaultState = State {
     gameState = Game,
-    ballPosition = (1, 1),
-    ballDirection = (Neutral, Neutral)
+    ballPosition = (9, 4),
+    ballDirection = (Neutral, Neutral),
+    strokeDirection = (Neutral, Neutral),
+    strokePower = 1,
+    strokeNumber = 1,
+    holeNumber = 1,
+    holePosition = (0, 0),
+    totalScore = 0
 }
