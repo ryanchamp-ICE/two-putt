@@ -1,5 +1,11 @@
 module Game.Render where
 
+import Control.Monad.Trans.Class (lift)
+
+import Game.Env (Env (..))
+import Game.State (State (..))
+import Game.Type (Game)
+
 mapFile :: String
 mapFile = "1555O555555555555555\n55555555555555555555\n55555555555555555555\n55555555555555555555\n55555555555555555555\n55555555555555555555\n55555555555555555555\n55555555555555555555\n55555555555555555555\n55555555555555555555\n"
 
@@ -39,8 +45,14 @@ parseMap tileFile = zipWith (\i str -> createTileLines str i) [0..] tileFile
 renderTiles :: [[TileType]] -> (Int, Int) -> String
 renderTiles xs ballPos = concatMap (`renderTileLines` ballPos) xs
 
-renderIO :: IO ()
-renderIO = do
-    putStrLn $ renderTiles mapLines (5, 9)
-    where
+renderString :: Game Env State String
+renderString = do
+    return (renderTiles mapLines (5, 9))
+        where
         mapLines = parseMap (lines mapFile)
+
+renderIO :: Game Env State ()
+renderIO = do
+    output <- renderString
+    lift $ lift (putStrLn output)
+    
