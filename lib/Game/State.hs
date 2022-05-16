@@ -32,7 +32,7 @@ data State = State {
 defaultState :: State
 defaultState = State {
     gameState = Game,
-    ballPosition = (9, 4),
+    ballPosition = (9, 19),
     ballDirection = (Neutral, Neutral),
     strokeDirection = (Neutral, Neutral),
     strokePower = 1,

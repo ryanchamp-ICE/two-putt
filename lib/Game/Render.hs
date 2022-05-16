@@ -9,19 +9,33 @@ import Game.State (State (..), GameState (Menu, Game))
 import Game.Type (Game)
 
 mapFile :: String
-mapFile = "1555O555555555555555\n55555555555555555555\n55555555555555555555\n55555555555555555555\n55555555555555555555\n55555555555555555555\n55555555555555555555\n55555555555555555555\n55555555555555555555\n55555555555555555555\n"
+mapFile = "55555655555555555555\n55555655555555555555\n55055655555555555555\n55555655555555555555\n22233355555555555555\n55555555555555555555\n55555555555555555555\n55555555555555555555\n55555555555555555555\n55555555555555555555\n"
 
 data TileType
-    = Flat (Int, Int)
-    | SWSlope (Int, Int)
-    | Hole (Int, Int)
+    = Hole (Int, Int)
+    | Southwest (Int, Int)
+    | South (Int, Int)
+    | Southeast (Int, Int)
+    | West (Int, Int)
+    | Flat (Int, Int)
+    | East (Int, Int)
+    | Northwest (Int, Int)
+    | North (Int, Int)
+    | Northeast (Int, Int)
     | Unknown
     deriving Show
 
 createTileType :: Char -> (Int, Int) -> TileType
+createTileType '0' pos = Hole pos
+createTileType '1' pos = Southwest pos
+createTileType '2' pos = South pos
+createTileType '3' pos = Southeast pos
+createTileType '4' pos = West pos
 createTileType '5' pos = Flat pos
-createTileType 'O' pos = Hole pos
-createTileType '1' pos = SWSlope pos
+createTileType '6' pos = East pos
+createTileType '7' pos = Northwest pos
+createTileType '8' pos = North pos
+createTileType '9' pos = Northeast pos
 createTileType _ _ = Unknown
 
 renderTileCharacter :: (Int, Int) -> (Int, Int) -> Char -> Char
@@ -30,9 +44,16 @@ renderTileCharacter (tileX, tileY) (ballX, ballY) ch
     | otherwise = ch
 
 renderTile :: TileType -> (Int, Int) -> Char
-renderTile (Flat tilePos) ballPos = renderTileCharacter tilePos ballPos ' '
 renderTile (Hole tilePos) ballPos = renderTileCharacter tilePos ballPos 'O'
-renderTile (SWSlope tilePos) ballPos = renderTileCharacter tilePos ballPos '\x2199'
+renderTile (Southwest tilePos) ballPos = renderTileCharacter tilePos ballPos '\x2199'
+renderTile (South tilePos) ballPos = renderTileCharacter tilePos ballPos '\x2193'
+renderTile (Southeast tilePos) ballPos = renderTileCharacter tilePos ballPos '\x2198'
+renderTile (West tilePos) ballPos = renderTileCharacter tilePos ballPos '\x2190'
+renderTile (Flat tilePos) ballPos = renderTileCharacter tilePos ballPos ' '
+renderTile (East tilePos) ballPos = renderTileCharacter tilePos ballPos '\x2192'
+renderTile (Northwest tilePos) ballPos = renderTileCharacter tilePos ballPos '\x2196'
+renderTile (North tilePos) ballPos = renderTileCharacter tilePos ballPos '\x2191'
+renderTile (Northeast tilePos) ballPos = renderTileCharacter tilePos ballPos '\x2197'
 renderTile Unknown _ = error "Unknown tile type"
 
 createTileLines :: String -> Int -> [TileType]
