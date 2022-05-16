@@ -1,5 +1,9 @@
 module Game.State where
 
+import Control.Monad.Trans.State.Strict (get, put)
+import Control.Monad.Trans.Reader (ask)
+import Control.Monad.Trans.Class (lift)
+
 import Game.Env (Env (..))
 import Game.Type (Game (..))
 
@@ -41,3 +45,12 @@ defaultState = State {
     holePosition = (0, 0),
     totalScore = 0
 }
+
+next :: Game Env State ()
+next = do
+    env <- ask
+    prevState <- lift get
+    lift (put $ nextInternal env prevState)
+
+nextInternal :: Env -> State -> State
+nextInternal (Env velocity) state = undefined
