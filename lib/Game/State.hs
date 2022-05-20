@@ -53,4 +53,4 @@ next = do
     lift (put $ nextInternal env prevState)
 
 nextInternal :: Env -> State -> State
-nextInternal (Env velocity) state = undefined
+nextInternal (Env velocity maxPower) prevState = undefined
