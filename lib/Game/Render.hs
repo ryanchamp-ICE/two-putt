@@ -78,6 +78,11 @@ renderGameInfo state = "Ball Pos: " ++ renderPosition (ballPosition state) ++ " 
                        "Stroke Number: " ++ show (strokeNumber state) ++ " | " ++
                        "Total Score: " ++ show (totalScore state) ++ "\n"
 
+renderDebugInfo :: State -> String
+renderDebugInfo state = "Game State: " ++ show (gameState state) ++ " | " ++
+                        "Player State: " ++ show (playerState state) ++ "\n"
+
+
 renderPowerBar :: Env -> State -> String
 renderPowerBar env state = "Stroke Power: " ++ show (strokePower state) ++ " | " ++
                            "Stroke Max: " ++ show (maxPower env) ++ "\n"
@@ -85,7 +90,8 @@ renderPowerBar env state = "Stroke Power: " ++ show (strokePower state) ++ " | "
 renderGame :: Env -> State -> String
 renderGame env state = renderTiles mapLines (ballPosition state) ++ "\n" ++
                        renderPowerBar env state ++
-                       renderGameInfo state
+                       renderGameInfo state ++
+                       renderDebugInfo state
     where
         mapLines = parseMap (lines mapFile)
 
