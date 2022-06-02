@@ -46,7 +46,8 @@ renderDebugInfo :: State -> String
 renderDebugInfo state = "Game State: " ++ show (gameState state) ++ " | " ++
                         "Player State: " ++ show (playerState state) ++ " | " ++
                         "Ball Direction: " ++ show (ballDirection state) ++ " | " ++
-                        "Tile Direction: " ++ show (tileDirectionByPosition (ballPosition state) (holeTiles state)) ++ "\n"
+                        "Tile Direction: " ++ show (tileDirectionByPosition (ballPosition state) (holeTiles state)) ++ " | " ++
+                        "Ball Acceleration: " ++ show (ballAcceleration state) ++ " \n "
 
 
 renderPowerBar :: Env -> State -> String

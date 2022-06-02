@@ -46,6 +46,13 @@ collideDirection Negative Negative = Negative
 collideDirection Negative Neutral = Negative
 collideDirection Neutral _ = Neutral
 
+calcAccel :: Int -> Int -> Int -> Direction -> Direction -> Int
+calcAccel currentAccel minVal maxVal Positive Positive = min (currentAccel + 1) maxVal
+calcAccel currentAccel minVal maxVal Negative Negative = min (currentAccel + 1) maxVal
+calcAccel currentAccel minVal maxVal Positive Negative = max (currentAccel - 1) minVal
+calcAccel currentAccel minVal maxVal Negative Positive = max (currentAccel - 1) minVal
+calcAccel currentAccel _ _ _ _ = currentAccel
+
 collideDirections :: (Direction, Direction) -> (Direction, Direction) -> (Direction, Direction)
 collideDirections (ballY, ballX) (tileY, tileX) = (collideDirection ballY tileY, collideDirection ballX tileX)
 
@@ -54,6 +61,7 @@ data State = State {
     playerState :: PlayerState,
     ballPosition :: (Int, Int),
     ballDirection :: (Direction, Direction),
+    ballAcceleration :: (Int, Int),
     strokeDirection :: (Direction, Direction),
     strokePower :: Int,
     strokeNumber :: Int,
@@ -67,8 +75,9 @@ defaultState :: State
 defaultState = State {
     gameState = Menu,
     playerState = Stroke,
-    ballPosition = (9, 19),
+    ballPosition = (9, 10),
     ballDirection = (Negative, Negative),
+    ballAcceleration = (2, 2),
     strokeDirection = (Neutral, Neutral),
     strokePower = 1,
     strokeNumber = 1,
@@ -79,7 +88,7 @@ defaultState = State {
 }
 
 mapFile :: String
-mapFile = "55555655555555555555\n55555655555555555555\n55055655555555555555\n55555655555555555555\n22233355555555555555\n55555555555555555555\n55555555555555555555\n55555555555555555555\n55555555555555555555\n55555555555555555555\n"
+mapFile = "55555655555555555555\n55555655555555555555\n55055655555555555555\n55555655555555555555\n22233355555555555555\n55555555555555555555\n22222222222222222222\n55555555555555555555\n55555555555555555555\n55555555555555555555\n"
 
 createTileType :: Char -> (Int, Int) -> TileType
 createTileType '0' pos = Hole pos
@@ -139,11 +148,12 @@ next = do
     lift (put $ nextInternal env prevState)
 
 nextInternal :: Env -> State -> State
-nextInternal (Env (width, height) velocity maxPower) prevState@(State 
+nextInternal (Env (width, height) velocity maxPower maxAccel) prevState@(State 
     prevGameState
     prevPlayerState 
     (prevBallX, prevBallY) 
     (prevXDir, prevYDir) 
+    (prevXAccel, prevYAccel)
     strokeDirection 
     strokePower
     strokeNumber
@@ -157,6 +167,7 @@ nextInternal (Env (width, height) velocity maxPower) prevState@(State
                 playerState = Aim,
                 ballPosition = (prevBallX, prevBallY),
                 ballDirection = (prevXDir, prevYDir),
+                ballAcceleration = (prevXAccel, prevYAccel),
                 strokeDirection = strokeDirection,
                 strokePower = 1,
                 strokeNumber = 1,
@@ -173,6 +184,7 @@ nextInternal (Env (width, height) velocity maxPower) prevState@(State
                     playerState = prevPlayerState,
                     ballPosition = (newX, newY),
                     ballDirection = (newXDir, newYDir),
+                    ballAcceleration = (newXAccel, newYAccel),
                     strokeDirection = strokeDirection,
                     strokePower = newStrokePower,
                     strokeNumber = newStrokeNumber,
@@ -186,6 +198,7 @@ nextInternal (Env (width, height) velocity maxPower) prevState@(State
                 playerState = Stroke,
                 ballPosition = (prevBallX, prevBallY),
                 ballDirection = (prevXDir, prevYDir),
+                ballAcceleration = (prevXAccel, prevYAccel),
                 strokeDirection = strokeDirection,
                 strokePower = 50,
                 strokeNumber = 1,
@@ -199,12 +212,16 @@ nextInternal (Env (width, height) velocity maxPower) prevState@(State
         newHoleTiles = parseMap (lines mapFile)
         newHolePosition = findHolePosition newHoleTiles
         newStrokeNumber = strokeNumber
-        newStrokePower = max (strokePower - (abs velocity)) 0
+        newStrokePower = max (strokePower - velocity) 0
         (tileXDir, tileYDir) = tileToDirection $ findTileByPosition (prevBallX, prevBallY) holeTiles
-        newXDirUnbounded = collideDirection prevXDir tileXDir
-        newYDirUnbounded = collideDirection prevYDir tileYDir
+        newXDirDetected = collideDirection prevXDir tileXDir
+        newYDirDetected = collideDirection prevYDir tileYDir
         newXUnbounded = prevBallX + directionToInt newXDirUnbounded * (min newStrokePower velocity)
         newYUnbounded = prevBallY + directionToInt newYDirUnbounded * (min newStrokePower velocity)
+        newXAccel = calcAccel prevXAccel 0 maxAccel prevXDir tileXDir
+        newYAccel = calcAccel prevYAccel 0 maxAccel prevYDir tileYDir
+        newXDirUnbounded = if newXAccel == 0 then newXDirDetected else prevXDir
+        newYDirUnbounded = if newYAccel == 0 then newYDirDetected else prevYDir
         newX =
             case prevXDir of
                 Neutral -> newXUnbounded
