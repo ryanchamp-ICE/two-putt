@@ -5,11 +5,12 @@ import Control.Monad.Trans.Reader (ask)
 import Control.Monad.Trans.Class (lift)
 
 import Game.Env (Env (..))
-import Game.Type (Game (..))
+import Game.Type (Game (..), TileType(..))
+import Data.List (find)
 
 data Direction = Positive | Negative | Neutral
     deriving (Show, Eq)
-data GameState = Menu | Game
+data GameState = Menu | Game | LoadHole
     deriving (Show, Eq)
 data PlayerState = Aim | SetPower | Stroke
     deriving (Show, Eq)
@@ -35,12 +36,13 @@ data State = State {
     strokeNumber :: Int,
     holeNumber :: Int,
     holePosition :: (Int, Int),
+    holeTiles :: [[TileType]],
     totalScore :: Int
 }
 
 defaultState :: State
 defaultState = State {
-    gameState = Game,
+    gameState = Menu,
     playerState = Stroke,
     ballPosition = (9, 19),
     ballDirection = (Negative, Negative),
@@ -49,8 +51,34 @@ defaultState = State {
     strokeNumber = 1,
     holeNumber = 1,
     holePosition = (0, 0),
+    holeTiles = [[]],
     totalScore = 0
 }
+
+mapFile :: String
+mapFile = "55555655555555555555\n55555655555555555555\n55055655555555555555\n55555655555555555555\n22233355555555555555\n55555555555555555555\n55555555555555555555\n55555555555555555555\n55555555555555555555\n55555555555555555555\n"
+
+createTileType :: Char -> (Int, Int) -> TileType
+createTileType '0' pos = Hole pos
+createTileType '1' pos = Southwest pos
+createTileType '2' pos = South pos
+createTileType '3' pos = Southeast pos
+createTileType '4' pos = West pos
+createTileType '5' pos = Flat pos
+createTileType '6' pos = East pos
+createTileType '7' pos = Northwest pos
+createTileType '8' pos = North pos
+createTileType '9' pos = Northeast pos
+createTileType _ _ = Unknown
+
+createTileLines :: String -> Int -> [TileType]
+createTileLines tileString lineNumber = zipWith (\i ch -> createTileType ch (lineNumber, i)) [0..] tileString
+
+parseMap :: [String] -> [[TileType]]
+parseMap tileFile = zipWith (\i str -> createTileLines str i) [0..] tileFile
+
+findHolePosition :: [[TileType]] -> (Int, Int)
+findHolePosition tileLines = undefined
 
 next :: Game Env State ()
 next = do
@@ -68,11 +96,12 @@ nextInternal (Env (width, height) velocity maxPower) prevState@(State
     strokePower
     strokeNumber
     holeNumber 
-    holePosition 
+    holePosition
+    holeTiles
     totalScore) = 
         case prevGameState of
             Menu -> State {
-                gameState = Menu,
+                gameState = LoadHole,
                 playerState = Aim,
                 ballPosition = (prevBallX, prevBallY),
                 ballDirection = (prevXDir, prevYDir),
@@ -81,6 +110,7 @@ nextInternal (Env (width, height) velocity maxPower) prevState@(State
                 strokeNumber = 1,
                 holeNumber = 1,
                 holePosition = holePosition,
+                holeTiles = holeTiles,
                 totalScore = totalScore
             }
             Game -> case prevPlayerState of
@@ -96,11 +126,26 @@ nextInternal (Env (width, height) velocity maxPower) prevState@(State
                     strokeNumber = newStrokeNumber,
                     holeNumber = newHoleNumber,
                     holePosition = holePosition,
+                    holeTiles = holeTiles,
                     totalScore = totalScore
                 }
+            LoadHole -> State {
+                gameState = Game,
+                playerState = Stroke,
+                ballPosition = (prevBallX, prevBallY),
+                ballDirection = (prevXDir, prevYDir),
+                strokeDirection = strokeDirection,
+                strokePower = 1,
+                strokeNumber = 1,
+                holeNumber = newHoleNumber,
+                holePosition = newHolePosition,
+                holeTiles = parseMap (lines mapFile),
+                totalScore = totalScore
+            }
     where
-        newStrokeNumber = strokeNumber
         newHoleNumber = holeNumber
+        newHolePosition = findHolePosition holeTiles
+        newStrokeNumber = strokeNumber
         newXUnbounded = prevBallX + directionToInt prevXDir * velocity
         newYUnbounded = prevBallY + directionToInt prevYDir * velocity
         newX =
