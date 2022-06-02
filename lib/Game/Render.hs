@@ -5,7 +5,7 @@ import Control.Monad.Trans.State.Strict (get)
 import Control.Monad.Trans.Class (lift)
 
 import Game.Env (Env (..))
-import Game.State (State (..), GameState (Menu, Game, LoadHole))
+import Game.State (State (..), GameState (Menu, Game, LoadHole), tileDirectionByPosition)
 import Game.Type (Game, TileType(..))
 
 renderTileCharacter :: (Int, Int) -> (Int, Int) -> Char -> Char
@@ -44,7 +44,9 @@ renderGameInfo state = "Ball Pos: " ++ renderPosition (ballPosition state) ++ " 
 
 renderDebugInfo :: State -> String
 renderDebugInfo state = "Game State: " ++ show (gameState state) ++ " | " ++
-                        "Player State: " ++ show (playerState state) ++ "\n"
+                        "Player State: " ++ show (playerState state) ++ " | " ++
+                        "Ball Direction: " ++ show (ballDirection state) ++ " | " ++
+                        "Tile Direction: " ++ show (tileDirectionByPosition (ballPosition state) (holeTiles state)) ++ "\n"
 
 
 renderPowerBar :: Env -> State -> String

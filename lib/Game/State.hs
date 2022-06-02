@@ -16,15 +16,31 @@ data PlayerState = Aim | SetPower | Stroke
     deriving (Show, Eq)
 
 intToDirection :: Int -> Direction
-intToDirection -1 = Negative
+intToDirection (-1) = Negative
 intToDirection 0 = Neutral
 intToDirection 1 = Positive
 intToDirection _ = error "Invalid direction"
 
 directionToInt :: Direction -> Int
-directionToInt Negative = -1
+directionToInt Negative = (-1)
 directionToInt Neutral = 0
 directionToInt Positive = 1
+
+tileToDirection :: TileType -> (Direction, Direction)
+tileToDirection (Southwest _) = (Positive, Negative)
+tileToDirection (South _) = (Positive, Neutral)
+tileToDirection (Southeast _) = (Positive, Positive)
+tileToDirection (East _) = (Neutral, Positive)
+tileToDirection (Northeast _) = (Negative, Positive)
+tileToDirection (North _) = (Negative, Neutral)
+tileToDirection (Northwest _) = (Negative, Negative)
+tileToDirection (West _) = (Neutral, Negative)  
+tileToDirection _ = (Neutral, Neutral)
+
+collideDirections :: Direction -> Direction -> Direction
+collideDirections Positive Positive = Positive
+collideDirections Negative Negative = Negative
+collideDirections _ _ = Neutral
 
 data State = State {
     gameState :: GameState,
@@ -77,8 +93,37 @@ createTileLines tileString lineNumber = zipWith (\i ch -> createTileType ch (lin
 parseMap :: [String] -> [[TileType]]
 parseMap tileFile = zipWith (\i str -> createTileLines str i) [0..] tileFile
 
+isHole :: TileType -> Bool
+isHole (Hole _) = True
+isHole _ = False
+
+isTilePosition :: (Int, Int) -> TileType -> Bool
+isTilePosition pos (Hole pos') = pos == pos'
+isTilePosition pos (Southwest pos') = pos == pos'
+isTilePosition pos (South pos') = pos == pos'
+isTilePosition pos (Southeast pos') = pos == pos'
+isTilePosition pos (West pos') = pos == pos'
+isTilePosition pos (Flat pos') = pos == pos'
+isTilePosition pos (East pos') = pos == pos'
+isTilePosition pos (Northwest pos') = pos == pos'
+isTilePosition pos (North pos') = pos == pos'
+isTilePosition pos (Northeast pos') = pos == pos'
+isTilePosition _ _ = False
+
+findTileByPosition :: (Int, Int) -> [[TileType]] -> TileType
+findTileByPosition pos tiles = 
+    case find (isTilePosition pos) $ concat tiles of
+        Nothing -> error "Tile not found"
+        Just tile -> tile
+
 findHolePosition :: [[TileType]] -> (Int, Int)
-findHolePosition tileLines = undefined
+findHolePosition tileLines =
+    case find (isHole) $ concat tileLines of
+        Nothing -> error "No hole found"
+        Just (Hole pos) -> pos
+
+tileDirectionByPosition :: (Int, Int) -> [[TileType]] -> (Direction, Direction)
+tileDirectionByPosition pos tiles = tileToDirection $ findTileByPosition pos tiles
 
 next :: Game Env State ()
 next = do
@@ -122,7 +167,7 @@ nextInternal (Env (width, height) velocity maxPower) prevState@(State
                     ballPosition = (newX, newY),
                     ballDirection = (newXDir, newYDir),
                     strokeDirection = strokeDirection,
-                    strokePower = 1,
+                    strokePower = newStrokePower,
                     strokeNumber = newStrokeNumber,
                     holeNumber = newHoleNumber,
                     holePosition = holePosition,
@@ -135,19 +180,22 @@ nextInternal (Env (width, height) velocity maxPower) prevState@(State
                 ballPosition = (prevBallX, prevBallY),
                 ballDirection = (prevXDir, prevYDir),
                 strokeDirection = strokeDirection,
-                strokePower = 1,
+                strokePower = 50,
                 strokeNumber = 1,
                 holeNumber = newHoleNumber,
                 holePosition = newHolePosition,
-                holeTiles = parseMap (lines mapFile),
+                holeTiles = newHoleTiles,
                 totalScore = totalScore
             }
     where
         newHoleNumber = holeNumber
-        newHolePosition = findHolePosition holeTiles
+        newHoleTiles = parseMap (lines mapFile)
+        newHolePosition = findHolePosition newHoleTiles
         newStrokeNumber = strokeNumber
-        newXUnbounded = prevBallX + directionToInt prevXDir * velocity
-        newYUnbounded = prevBallY + directionToInt prevYDir * velocity
+        newStrokePower = max (strokePower - (abs velocity)) 0
+        (tileXDir, tileYDir) = tileToDirection $ findTileByPosition (prevBallX, prevBallY) holeTiles
+        newXUnbounded = prevBallX + directionToInt prevXDir * ((min newStrokePower velocity) + directionToInt (collideDirections prevXDir tileXDir))
+        newYUnbounded = prevBallY + directionToInt prevYDir * ((min newStrokePower velocity) + directionToInt (collideDirections prevYDir tileYDir))
         newX =
             case prevXDir of
                 Neutral -> newXUnbounded

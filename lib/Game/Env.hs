@@ -8,7 +8,7 @@ data Env = Env {
 
 defaultEnv :: Env
 defaultEnv = Env {
-    size = (10, 20),
+    size = (9, 19),
     velocity = 1,
     maxPower = 100
 }
