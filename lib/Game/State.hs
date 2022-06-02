@@ -37,10 +37,17 @@ tileToDirection (Northwest _) = (Negative, Negative)
 tileToDirection (West _) = (Neutral, Negative)  
 tileToDirection _ = (Neutral, Neutral)
 
-collideDirections :: Direction -> Direction -> Direction
-collideDirections Positive Positive = Positive
-collideDirections Negative Negative = Negative
-collideDirections _ _ = Neutral
+collideDirection :: Direction -> Direction -> Direction
+collideDirection Positive Positive = Positive
+collideDirection Positive Negative = Neutral
+collideDirection Positive Neutral = Positive
+collideDirection Negative Positive = Neutral
+collideDirection Negative Negative = Negative
+collideDirection Negative Neutral = Negative
+collideDirection Neutral _ = Neutral
+
+collideDirections :: (Direction, Direction) -> (Direction, Direction) -> (Direction, Direction)
+collideDirections (ballY, ballX) (tileY, tileX) = (collideDirection ballY tileY, collideDirection ballX tileX)
 
 data State = State {
     gameState :: GameState,
@@ -194,8 +201,10 @@ nextInternal (Env (width, height) velocity maxPower) prevState@(State
         newStrokeNumber = strokeNumber
         newStrokePower = max (strokePower - (abs velocity)) 0
         (tileXDir, tileYDir) = tileToDirection $ findTileByPosition (prevBallX, prevBallY) holeTiles
-        newXUnbounded = prevBallX + directionToInt prevXDir * ((min newStrokePower velocity) + directionToInt (collideDirections prevXDir tileXDir))
-        newYUnbounded = prevBallY + directionToInt prevYDir * ((min newStrokePower velocity) + directionToInt (collideDirections prevYDir tileYDir))
+        newXDirUnbounded = collideDirection prevXDir tileXDir
+        newYDirUnbounded = collideDirection prevYDir tileYDir
+        newXUnbounded = prevBallX + directionToInt newXDirUnbounded * (min newStrokePower velocity)
+        newYUnbounded = prevBallY + directionToInt newYDirUnbounded * (min newStrokePower velocity)
         newX =
             case prevXDir of
                 Neutral -> newXUnbounded
@@ -207,7 +216,7 @@ nextInternal (Env (width, height) velocity maxPower) prevState@(State
                 Positive -> min newYUnbounded height
                 Negative -> max newYUnbounded 0
         newXDir =
-            case prevXDir of
+            case newXDirUnbounded of
                 Neutral -> Neutral
                 Positive ->
                     if newXUnbounded > width
@@ -218,7 +227,7 @@ nextInternal (Env (width, height) velocity maxPower) prevState@(State
                     then Positive
                     else Negative
         newYDir =
-            case prevYDir of
+            case newYDirUnbounded of
                 Neutral -> Neutral
                 Positive ->
                     if newYUnbounded > height
