@@ -239,7 +239,7 @@ nextInternal (Env (width, height) velocity maxPower maxAccel) prevState@(State
                 Positive -> min newYUnbounded height
                 Negative -> max newYUnbounded 0
         newXDir =
-            case newXDirDetected of
+            case newXDirAfterCollision of
                 Neutral -> Neutral
                 Positive ->
                     if newXUnbounded > width
@@ -250,7 +250,7 @@ nextInternal (Env (width, height) velocity maxPower maxAccel) prevState@(State
                     then Positive
                     else Negative
         newYDir =
-            case newYDirDetected of
+            case newYDirAfterCollision of
                 Neutral -> Neutral
                 Positive ->
                     if newYUnbounded > height
