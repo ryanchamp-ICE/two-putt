@@ -37,7 +37,7 @@ defaultState = State {
     ballDirection = (Negative, Negative),
     strokeDirection = (Neutral, Neutral),
     strokePower = (10, 10),
-    strokeNumber = 1,
+    strokeNumber = 0,
     holeNumber = 1,
     holePosition = (0, 0),
     holeTiles = [[]],
@@ -198,7 +198,7 @@ nextInternal (Env (width, height) velocity maxPower maxAccel) prevState@(State
                 holeNumber = 1,
                 holePosition = holePosition,
                 holeTiles = holeTiles,
-                totalScore = (totalScore defaultState)
+                totalScore = prevTotalScore
             }
             Game -> case prevPlayerState of
                 Aim -> undefined
@@ -213,7 +213,7 @@ nextInternal (Env (width, height) velocity maxPower maxAccel) prevState@(State
                     holeNumber = prevHoleNumber,
                     holePosition = holePosition,
                     holeTiles = holeTiles,
-                    totalScore = prevTotalScore + prevStrokeNumber
+                    totalScore = prevTotalScore
                 }
                 Stroke -> State {
                     gameState = newGameState,
@@ -226,7 +226,7 @@ nextInternal (Env (width, height) velocity maxPower maxAccel) prevState@(State
                     holeNumber = prevHoleNumber,
                     holePosition = holePosition,
                     holeTiles = holeTiles,
-                    totalScore = prevTotalScore
+                    totalScore = if newPlayerState == HoleOut then prevTotalScore + prevStrokeNumber else prevTotalScore
                 }
                 HoleOut -> State {
                     gameState = Menu,
@@ -239,7 +239,7 @@ nextInternal (Env (width, height) velocity maxPower maxAccel) prevState@(State
                     holeNumber = prevHoleNumber,
                     holePosition = holePosition,
                     holeTiles = holeTiles,
-                    totalScore = prevTotalScore + prevStrokeNumber
+                    totalScore = prevTotalScore
                 }
             LoadHole -> State {
                 gameState = Game,
@@ -252,7 +252,7 @@ nextInternal (Env (width, height) velocity maxPower maxAccel) prevState@(State
                 holeNumber = newHoleNumber,
                 holePosition = newHolePosition,
                 holeTiles = newHoleTiles,
-                totalScore = prevTotalScore
+                totalScore = totalScore defaultState
             }
     where
         newGameState = prevGameState
@@ -267,8 +267,6 @@ nextInternal (Env (width, height) velocity maxPower maxAccel) prevState@(State
         newStrokePowerY = max ((strokePowerY + calcAccel prevYDir tileYDir) - velocity) 0
         newXUnbounded = prevBallX + directionToInt newXDirDetected * min newStrokePowerX velocity
         newYUnbounded = prevBallY + directionToInt newYDirDetected * min newStrokePowerX velocity
-        -- newXDirUnbounded = if newXAccel == 0 then newXDirDetected else prevXDir
-        -- newYDirUnbounded = if newYAccel == 0 then newYDirDetected else prevYDir
         newX =
             case prevXDir of
                 Neutral -> newXUnbounded
