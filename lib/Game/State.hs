@@ -12,7 +12,7 @@ data Direction = Positive | Negative | Neutral
     deriving (Show, Eq)
 data GameState = Menu | Game | LoadHole
     deriving (Show, Eq)
-data PlayerState = Aim | SetPower | Stroke
+data PlayerState = Aim | SetPower | Stroke | HoleOut
     deriving (Show, Eq)
 
 data State = State {
@@ -33,7 +33,7 @@ defaultState :: State
 defaultState = State {
     gameState = Menu,
     playerState = Stroke,
-    ballPosition = (9, 10),
+    ballPosition = (2, 15),
     ballDirection = (Negative, Negative),
     strokeDirection = (Neutral, Neutral),
     strokePower = (10, 10),
@@ -150,6 +150,12 @@ findHolePosition tileLines =
 tileDirectionByPosition :: (Int, Int) -> [[TileType]] -> (Direction, Direction)
 tileDirectionByPosition pos tiles = tileToDirection $ findTileByPosition pos tiles
 
+calcPlayerState :: (Int, Int) -> (Int, Int) -> (Int, Int) -> PlayerState
+calcPlayerState (ballX, ballY) (holeX, holeY) (strokePowerX, strokePowerY)
+    | ballX == holeX && ballY == holeY = HoleOut
+    | strokePowerX == 0 && strokePowerY == 0 = SetPower
+    | otherwise = Stroke
+
 next :: Game Env State ()
 next = do
     env <- ask
@@ -164,11 +170,11 @@ nextInternal (Env (width, height) velocity maxPower maxAccel) prevState@(State
     (prevXDir, prevYDir)
     strokeDirection
     (strokePowerX, strokePowerY)
-    strokeNumber
-    holeNumber
+    prevStrokeNumber
+    prevHoleNumber
     holePosition
     holeTiles
-    totalScore) =
+    prevTotalScore) =
         case prevGameState of
             Menu -> State {
                 gameState = LoadHole,
@@ -181,42 +187,68 @@ nextInternal (Env (width, height) velocity maxPower maxAccel) prevState@(State
                 holeNumber = 1,
                 holePosition = holePosition,
                 holeTiles = holeTiles,
-                totalScore = totalScore
+                totalScore = (totalScore defaultState)
             }
             Game -> case prevPlayerState of
                 Aim -> undefined
-                SetPower -> undefined
+                SetPower -> State {
+                    gameState = newGameState,
+                    playerState = Stroke,
+                    ballPosition = (newX, newY),
+                    ballDirection = strokeDirection,
+                    strokeDirection = strokeDirection,
+                    strokePower = (25, 25),
+                    strokeNumber = prevStrokeNumber + 1,
+                    holeNumber = prevHoleNumber,
+                    holePosition = holePosition,
+                    holeTiles = holeTiles,
+                    totalScore = prevTotalScore + prevStrokeNumber
+                }
                 Stroke -> State {
-                    gameState = Game,
+                    gameState = newGameState,
+                    playerState = newPlayerState,
+                    ballPosition = (newX, newY),
+                    ballDirection = (newXDir, newYDir),
+                    strokeDirection = strokeDirection,
+                    strokePower = (newStrokePowerX, newStrokePowerY),
+                    strokeNumber = prevStrokeNumber,
+                    holeNumber = prevHoleNumber,
+                    holePosition = holePosition,
+                    holeTiles = holeTiles,
+                    totalScore = prevTotalScore
+                }
+                HoleOut -> State {
+                    gameState = Menu,
                     playerState = prevPlayerState,
                     ballPosition = (newX, newY),
                     ballDirection = (newXDir, newYDir),
                     strokeDirection = strokeDirection,
                     strokePower = (newStrokePowerX, newStrokePowerY),
-                    strokeNumber = newStrokeNumber,
-                    holeNumber = newHoleNumber,
+                    strokeNumber = prevStrokeNumber,
+                    holeNumber = prevHoleNumber,
                     holePosition = holePosition,
                     holeTiles = holeTiles,
-                    totalScore = totalScore
+                    totalScore = prevTotalScore + prevStrokeNumber
                 }
             LoadHole -> State {
                 gameState = Game,
-                playerState = Stroke,
-                ballPosition = (prevBallX, prevBallY),
-                ballDirection = (prevXDir, prevYDir),
-                strokeDirection = strokeDirection,
-                strokePower = (25, 25),
+                playerState = SetPower,
+                ballPosition = ballPosition defaultState,
+                ballDirection = (Neutral, Negative),
+                strokeDirection = (Neutral, Negative),
+                strokePower = (0, 0),
                 strokeNumber = 1,
                 holeNumber = newHoleNumber,
                 holePosition = newHolePosition,
                 holeTiles = newHoleTiles,
-                totalScore = totalScore
+                totalScore = prevTotalScore
             }
     where
-        newHoleNumber = holeNumber
+        newGameState = prevGameState
+        newHoleNumber = prevHoleNumber
         newHoleTiles = parseMap (lines mapFile)
         newHolePosition = findHolePosition newHoleTiles
-        newStrokeNumber = strokeNumber
+        newPlayerState = calcPlayerState (prevBallX, prevBallY) newHolePosition (strokePowerX, strokePowerY)
         (tileXDir, tileYDir) = tileToDirection $ findTileByPosition (prevBallX, prevBallY) holeTiles
         newXDirDetected = collideDirection prevXDir tileXDir
         newYDirDetected = collideDirection prevYDir tileYDir

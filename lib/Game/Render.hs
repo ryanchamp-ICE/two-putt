@@ -5,7 +5,7 @@ import Control.Monad.Trans.State.Strict (get)
 import Control.Monad.Trans.Class (lift)
 
 import Game.Env (Env (..))
-import Game.State (State (..), GameState (Menu, Game, LoadHole), tileDirectionByPosition)
+import Game.State (State (..), GameState (..), PlayerState (..), tileDirectionByPosition)
 import Game.Type (Game, TileType(..))
 
 renderTileCharacter :: (Int, Int) -> (Int, Int) -> Char -> Char
@@ -65,7 +65,9 @@ renderString = do
     state <- lift get
     case gameState state of
         Menu -> return "Welcome to Two Putt!"
-        Game -> return (renderGame env state)
+        Game -> case playerState state of
+            HoleOut -> return ("Congratulations! You've made it to the hole! Your score is: " ++ show (totalScore state) ++ "\n")
+            _ -> return (renderGame env state)
         LoadHole -> return "Loading hole..."
 
 renderIO :: Game Env State ()
