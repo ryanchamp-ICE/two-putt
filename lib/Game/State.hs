@@ -100,16 +100,6 @@ calcAccel Positive Negative = -1
 calcAccel Negative Positive = -1
 calcAccel _ _ = 0
 
-isOpposingForce :: Direction -> Direction -> Bool
-isOpposingForce Positive Negative = True
-isOpposingForce Negative Positive = True
-isOpposingForce _ _ = False
-
-isSameForce :: Direction -> Direction -> Bool
-isSameForce Positive Positive = True
-isSameForce Negative Negative = True
-isSameForce _ _ = False
-
 createTileType :: Char -> (Int, Int) -> TileType
 createTileType '0' pos = Hole pos
 createTileType '1' pos = Southwest pos
