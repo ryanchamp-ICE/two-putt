@@ -33,7 +33,7 @@ defaultState :: State
 defaultState = State {
     gameState = Menu,
     playerState = Stroke,
-    ballPosition = (9, 9),
+    ballPosition = (9, 5),
     ballDirection = (Negative, Negative),
     strokeDirection = (Neutral, Neutral),
     strokePower = (10, 10),
@@ -44,8 +44,11 @@ defaultState = State {
     totalScore = 0
 }
 
+-- mapFile :: String
+-- mapFile = "55555655555555555555\n55555655555555555555\n55055655555555555555\n55555655555555555555\n22233355555555555555\n55555555555555555555\n22222222222222222222\n55555555555555555555\n55555555555555555555\n55555555555555555555\n"
+
 mapFile :: String
-mapFile = "55555655555555555555\n55555655555555555555\n55055655555555555555\n55555655555555555555\n22233355555555555555\n55555555555555555555\n22222222222222222222\n55555555555555555555\n55555555555555555555\n55555555555555555555\n"
+mapFile = "55555455555555555555\n55555455555555555555\n55055455555555555555\n55555455555555555555\n88877755555555555555\n55555555555555555555\n88888888888888888888\n55555555555555555555\n55555555555555555555\n55555555555555555555\n"
 
 intToDirection :: Int -> Direction
 intToDirection (-1) = Negative
@@ -69,14 +72,26 @@ tileToDirection (Northwest _) = (Negative, Negative)
 tileToDirection (West _) = (Neutral, Negative)
 tileToDirection _ = (Neutral, Neutral)
 
-collideDirection :: Direction -> Direction -> Direction
-collideDirection Positive Positive = Positive
-collideDirection Positive Negative = Neutral
-collideDirection Positive Neutral = Positive
-collideDirection Negative Positive = Neutral
-collideDirection Negative Negative = Negative
-collideDirection Negative Neutral = Negative
-collideDirection Neutral _ = Neutral
+collideDirection :: Direction -> Direction -> Int -> Direction
+collideDirection Positive Positive _ = Positive
+collideDirection Positive Negative power = if power == 0 then Neutral else Positive
+collideDirection Positive Neutral _ = Positive
+collideDirection Negative Positive power = if power == 0 then Neutral else Negative
+collideDirection Negative Negative _ = Negative
+collideDirection Negative Neutral _ = Negative
+collideDirection Neutral Positive _ = Positive
+collideDirection Neutral Negative _ = Negative
+collideDirection Neutral Neutral _ = Neutral
+
+getDirectionToHole :: Int -> Int -> Direction
+getDirectionToHole point1 point2
+    | point1 - point2 > 0 = Negative
+    | point1 - point2 < 0 = Positive
+    | otherwise = Neutral
+
+getDirectionsToHole :: (Int, Int) -> (Int, Int) -> (Direction, Direction)
+getDirectionsToHole (x1, y1) (x2, y2) =
+    (getDirectionToHole x1 x2, getDirectionToHole y1 y2)
 
 calcAccel :: Direction -> Direction -> Int
 calcAccel Positive Positive = 1
@@ -84,7 +99,6 @@ calcAccel Negative Negative = 1
 calcAccel Positive Negative = -1
 calcAccel Negative Positive = -1
 calcAccel _ _ = 0
-
 
 isOpposingForce :: Direction -> Direction -> Bool
 isOpposingForce Positive Negative = True
@@ -95,9 +109,6 @@ isSameForce :: Direction -> Direction -> Bool
 isSameForce Positive Positive = True
 isSameForce Negative Negative = True
 isSameForce _ _ = False
-
-collideDirections :: (Direction, Direction) -> (Direction, Direction) -> (Direction, Direction)
-collideDirections (ballY, ballX) (tileY, tileX) = (collideDirection ballY tileY, collideDirection ballX tileX)
 
 createTileType :: Char -> (Int, Int) -> TileType
 createTileType '0' pos = Hole pos
@@ -195,9 +206,9 @@ nextInternal (Env (width, height) velocity maxPower maxAccel) prevState@(State
                     gameState = newGameState,
                     playerState = Stroke,
                     ballPosition = (newX, newY),
-                    ballDirection = (Negative, Negative),
-                    strokeDirection = (Negative, Negative),
-                    strokePower = (25, 25),
+                    ballDirection = getDirectionsToHole (newX, newY) holePosition,
+                    strokeDirection = getDirectionsToHole (newX, newY) holePosition,
+                    strokePower = (10, 10),
                     strokeNumber = prevStrokeNumber + 1,
                     holeNumber = prevHoleNumber,
                     holePosition = holePosition,
@@ -250,14 +261,12 @@ nextInternal (Env (width, height) velocity maxPower maxAccel) prevState@(State
         newHolePosition = findHolePosition newHoleTiles
         newPlayerState = calcPlayerState (prevBallX, prevBallY) newHolePosition (strokePowerX, strokePowerY)
         (tileXDir, tileYDir) = tileToDirection $ findTileByPosition (prevBallX, prevBallY) holeTiles
-        newXDirDetected = collideDirection prevXDir tileXDir
-        newYDirDetected = collideDirection prevYDir tileYDir
+        newXDirDetected = collideDirection prevXDir tileXDir strokePowerX
+        newYDirDetected = collideDirection prevYDir tileYDir strokePowerY
         newStrokePowerX = max ((strokePowerX + calcAccel prevXDir tileXDir) - velocity) 0
         newStrokePowerY = max ((strokePowerY + calcAccel prevYDir tileYDir) - velocity) 0
-        newXDirAfterCollision = if newXDirDetected == Neutral && newStrokePowerX == 0 then newXDirDetected else prevXDir
-        newYDirAfterCollision = if newYDirDetected == Neutral && newStrokePowerY == 0 then newYDirDetected else prevYDir
-        newXUnbounded = prevBallX + directionToInt newXDirAfterCollision * min newStrokePowerX velocity
-        newYUnbounded = prevBallY + directionToInt newYDirAfterCollision * min newStrokePowerX velocity
+        newXUnbounded = prevBallX + directionToInt newXDirDetected * min newStrokePowerX velocity
+        newYUnbounded = prevBallY + directionToInt newYDirDetected * min newStrokePowerX velocity
         -- newXDirUnbounded = if newXAccel == 0 then newXDirDetected else prevXDir
         -- newYDirUnbounded = if newYAccel == 0 then newYDirDetected else prevYDir
         newX =
@@ -271,7 +280,7 @@ nextInternal (Env (width, height) velocity maxPower maxAccel) prevState@(State
                 Positive -> min newYUnbounded height
                 Negative -> max newYUnbounded 0
         newXDir =
-            case newXDirAfterCollision of
+            case newXDirDetected of
                 Neutral -> Neutral
                 Positive ->
                     if newXUnbounded > width
@@ -282,7 +291,7 @@ nextInternal (Env (width, height) velocity maxPower maxAccel) prevState@(State
                     then Positive
                     else Negative
         newYDir =
-            case newYDirAfterCollision of
+            case newYDirDetected of
                 Neutral -> Neutral
                 Positive ->
                     if newYUnbounded > height
