@@ -48,7 +48,7 @@ defaultState = State {
 -- mapFile = "55555655555555555555\n55555655555555555555\n55055655555555555555\n55555655555555555555\n22233355555555555555\n55555555555555555555\n22222222222222222222\n55555555555555555555\n55555555555555555555\n55555555555555555555\n"
 
 mapFile :: String
-mapFile = "55555455555555555555\n55555455555555555555\n55055455555555555555\n55555455555555555555\n88877755555555555555\n55555555555555555555\n88888888888888888888\n55555555555555555555\n55555555555555555555\n55555555555555555555\n"
+mapFile = "55555955555555655555\n55555955555555655555\n55555355505555655555\n55555355555555655555\n88877755555555222222\n55555555555555555555\n88888888889999999999\n55555555555555555555\n55555555555555555555\n55555555555555555555\n"
 
 intToDirection :: Int -> Direction
 intToDirection (-1) = Negative
@@ -233,11 +233,11 @@ nextInternal (Env (width, height) velocity maxPower maxAccel) prevState@(State
                 }
             LoadHole -> State {
                 gameState = Game,
-                playerState = SetPower,
+                playerState = Stroke,
                 ballPosition = (prevBallX, prevBallY),
-                ballDirection = (prevXDir, prevYDir),
-                strokeDirection = strokeDirection,
-                strokePower = (0, 0),
+                ballDirection = (Negative, Neutral),
+                strokeDirection = (Negative, Neutral),
+                strokePower = (10, 10),
                 strokeNumber = 1,
                 holeNumber = newHoleNumber,
                 holePosition = newHolePosition,
@@ -256,7 +256,7 @@ nextInternal (Env (width, height) velocity maxPower maxAccel) prevState@(State
         newStrokePowerX = max ((strokePowerX + calcAccel prevXDir tileXDir) - velocity) 0
         newStrokePowerY = max ((strokePowerY + calcAccel prevYDir tileYDir) - velocity) 0
         newXUnbounded = prevBallX + directionToInt newXDirDetected * min newStrokePowerX velocity
-        newYUnbounded = prevBallY + directionToInt newYDirDetected * min newStrokePowerX velocity
+        newYUnbounded = prevBallY + directionToInt newYDirDetected * min newStrokePowerY velocity
         newX =
             case prevXDir of
                 Neutral -> newXUnbounded
