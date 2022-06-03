@@ -193,7 +193,7 @@ nextInternal (Env (width, height) velocity maxPower maxAccel) prevState@(State
             Game -> case prevPlayerState of
                 Aim -> undefined
                 SetPower -> State {
-                    gameState = newGameState,
+                    gameState = prevGameState,
                     playerState = Stroke,
                     ballPosition = (newX, newY),
                     ballDirection = getDirectionsToHole (newX, newY) holePosition,
@@ -206,7 +206,7 @@ nextInternal (Env (width, height) velocity maxPower maxAccel) prevState@(State
                     totalScore = prevTotalScore
                 }
                 Stroke -> State {
-                    gameState = newGameState,
+                    gameState = prevGameState,
                     playerState = newPlayerState,
                     ballPosition = (newX, newY),
                     ballDirection = (newXDir, newYDir),
@@ -239,14 +239,12 @@ nextInternal (Env (width, height) velocity maxPower maxAccel) prevState@(State
                 strokeDirection = (Negative, Neutral),
                 strokePower = (10, 10),
                 strokeNumber = 1,
-                holeNumber = newHoleNumber,
+                holeNumber = prevHoleNumber,
                 holePosition = newHolePosition,
                 holeTiles = newHoleTiles,
                 totalScore = totalScore defaultState
             }
     where
-        newGameState = prevGameState
-        newHoleNumber = prevHoleNumber
         newHoleTiles = parseMap (lines mapFile)
         newHolePosition = findHolePosition newHoleTiles
         newPlayerState = calcPlayerState (prevBallX, prevBallY) newHolePosition (strokePowerX, strokePowerY)
