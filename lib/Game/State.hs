@@ -66,7 +66,7 @@ tileToDirection (East _) = (Neutral, Positive)
 tileToDirection (Northeast _) = (Negative, Positive)
 tileToDirection (North _) = (Negative, Neutral)
 tileToDirection (Northwest _) = (Negative, Negative)
-tileToDirection (West _) = (Neutral, Negative)  
+tileToDirection (West _) = (Neutral, Negative)
 tileToDirection _ = (Neutral, Neutral)
 
 collideDirection :: Direction -> Direction -> Direction
@@ -136,7 +136,7 @@ isTilePosition pos (Northeast pos') = pos == pos'
 isTilePosition _ _ = False
 
 findTileByPosition :: (Int, Int) -> [[TileType]] -> TileType
-findTileByPosition pos tiles = 
+findTileByPosition pos tiles =
     case find (isTilePosition pos) $ concat tiles of
         Nothing -> error "Tile not found"
         Just tile -> tile
@@ -157,18 +157,18 @@ next = do
     lift (put $ nextInternal env prevState)
 
 nextInternal :: Env -> State -> State
-nextInternal (Env (width, height) velocity maxPower maxAccel) prevState@(State 
+nextInternal (Env (width, height) velocity maxPower maxAccel) prevState@(State
     prevGameState
-    prevPlayerState 
-    (prevBallX, prevBallY) 
-    (prevXDir, prevYDir) 
-    strokeDirection 
+    prevPlayerState
+    (prevBallX, prevBallY)
+    (prevXDir, prevYDir)
+    strokeDirection
     (strokePowerX, strokePowerY)
     strokeNumber
-    holeNumber 
+    holeNumber
     holePosition
     holeTiles
-    totalScore) = 
+    totalScore) =
         case prevGameState of
             Menu -> State {
                 gameState = LoadHole,
@@ -222,10 +222,10 @@ nextInternal (Env (width, height) velocity maxPower maxAccel) prevState@(State
         newYDirDetected = collideDirection prevYDir tileYDir
         newStrokePowerX = max ((strokePowerX + calcAccel prevXDir tileXDir) - velocity) 0
         newStrokePowerY = max ((strokePowerY + calcAccel prevYDir tileYDir) - velocity) 0
-        newXDirAfterCollision = if (newXDirDetected == Neutral && newStrokePowerX == 0) then Neutral else newXDirDetected
-        newYDirAfterCollision = if (newYDirDetected == Neutral && newStrokePowerY == 0) then Neutral else newYDirDetected
-        newXUnbounded = prevBallX + directionToInt newXDirAfterCollision * (min newStrokePowerX velocity)
-        newYUnbounded = prevBallY + directionToInt newYDirAfterCollision * (min newStrokePowerX velocity)
+        newXDirAfterCollision = if newXDirDetected == Neutral && newStrokePowerX == 0 then newXDirDetected else prevXDir
+        newYDirAfterCollision = if newYDirDetected == Neutral && newStrokePowerY == 0 then newYDirDetected else prevYDir
+        newXUnbounded = prevBallX + directionToInt newXDirAfterCollision * min newStrokePowerX velocity
+        newYUnbounded = prevBallY + directionToInt newYDirAfterCollision * min newStrokePowerX velocity
         -- newXDirUnbounded = if newXAccel == 0 then newXDirDetected else prevXDir
         -- newYDirUnbounded = if newYAccel == 0 then newYDirDetected else prevYDir
         newX =
